@@ -1,39 +1,37 @@
 package com.drawingstudio.app;
 
 import com.drawingstudio.canvas.DrawingCanvas;
+import com.drawingstudio.events.CanvasMouseHandler;
+import com.drawingstudio.events.CanvasMotionHandler;
+import com.drawingstudio.manager.FileDialogManager;
+import com.drawingstudio.ui.*;
 import com.drawingstudio.utils.ColorUtils;
+
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
+import java.io.File;
+import javax.swing.*;
 
 /**
- * AWT-Based Drawing Application
- * Main application class - demonstrates OOP concepts:
- * - Encapsulation: Private fields with controlled access
- * - Inheritance: Extends Frame, implements interfaces
- * - Polymorphism: ActionListener, MouseListener interfaces
- * - Composition: Uses DrawingCanvas, ColorPalettePanel
+ * Main application class for Simple Drawing Studio
+ * Minimal class that only handles application initialization and event coordination
+ * All heavy lifting is delegated to respective packages
  */
-public class SimpleDrawingApp extends Frame implements ActionListener, MouseListener, MouseMotionListener {
+public class SimpleDrawingApp extends JFrame implements ActionListener {
     private DrawingCanvas canvas;
     private Color currentColor = Color.BLACK;
     private int brushSize = 3;
     private String currentTool = "BRUSH";
-    private String currentBrushType = "NORMAL";
     
-    // UI Components - demonstrates encapsulation
-    private Button lineBtn, rectBtn, ovalBtn, triangleBtn, diamondBtn;
-    private Button clearBtn, undoBtn, redoBtn, saveBtn, loadBtn, colorPickerBtn, customColorBtn;
+    // UI Components
+    private JButton lineBtn, rectBtn, ovalBtn, triangleBtn, diamondBtn;
+    private JButton clearBtn, undoBtn, redoBtn, saveBtn, loadBtn, colorPickerBtn, customColorBtn;
     private Choice colorChoice, brushChoice, toolChoice;
-    private Panel toolPanel, canvasPanel;
     private Label statusLabel;
-    
-    // Drawing state
-    private boolean isDrawing = false;
-    private Point startPoint, lastPoint;
+    private Canvas colorPreviewBox;
     
     public SimpleDrawingApp() {
-        setTitle("Simple Drawing Studio - AWT Version (Package Structure)");
+        setTitle("Simple Drawing Studio - AWT Version");
         setSize(1000, 700);
         setLocationRelativeTo(null);
         
@@ -41,7 +39,6 @@ public class SimpleDrawingApp extends Frame implements ActionListener, MouseList
         setupLayout();
         setupEventHandlers();
         
-        // Handle window closing
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 System.exit(0);
@@ -51,36 +48,39 @@ public class SimpleDrawingApp extends Frame implements ActionListener, MouseList
         setVisible(true);
     }
     
+    /**
+     * Initialize all UI components
+     */
     private void initializeComponents() {
         canvas = new DrawingCanvas(this);
         
-        // Create buttons
-        lineBtn = new Button("Line");
-        rectBtn = new Button("Rectangle");
-        ovalBtn = new Button("Oval");
-        triangleBtn = new Button("Triangle");
-        diamondBtn = new Button("Diamond");
-        clearBtn = new Button("Clear");
-        undoBtn = new Button("Undo");
-        redoBtn = new Button("Redo");
-        saveBtn = new Button("Save");
-        loadBtn = new Button("Load");
-        colorPickerBtn = new Button("Color Picker");
-        customColorBtn = new Button("Custom Color...");
+        // Create buttons using RoundedButton
+        lineBtn = new RoundedButton("Line", new Color(41, 128, 185));
+        rectBtn = new RoundedButton("Rectangle", new Color(41, 128, 185));
+        ovalBtn = new RoundedButton("Oval", new Color(41, 128, 185));
+        triangleBtn = new RoundedButton("Triangle", new Color(41, 128, 185));
+        diamondBtn = new RoundedButton("Diamond", new Color(41, 128, 185));
         
-        // Create choice components with better color labels
+        clearBtn = new RoundedButton("Clear", new Color(192, 57, 43));
+        undoBtn = new RoundedButton("Undo", new Color(192, 57, 43));
+        redoBtn = new RoundedButton("Redo", new Color(192, 57, 43));
+        saveBtn = new RoundedButton("Save", new Color(192, 57, 43));
+        loadBtn = new RoundedButton("Load", new Color(192, 57, 43));
+        
+        colorPickerBtn = new RoundedButton("Color Picker", new Color(39, 174, 96));
+        customColorBtn = new RoundedButton("Custom Color...", new Color(39, 174, 96));
+        
+        // Apply styling using ButtonStyler
+        ButtonStyler.styleShapeButtons(lineBtn, rectBtn, ovalBtn, triangleBtn, diamondBtn);
+        ButtonStyler.styleActionButtons(clearBtn, undoBtn, redoBtn, saveBtn, loadBtn);
+        ButtonStyler.styleColorButtons(colorPickerBtn, customColorBtn);
+        
+        // Create choice components
         colorChoice = new Choice();
-        colorChoice.add("Black");
-        colorChoice.add("Red");
-        colorChoice.add("Green");
-        colorChoice.add("Blue");
-        colorChoice.add("Yellow");
-        colorChoice.add("Orange");
-        colorChoice.add("Pink");
-        colorChoice.add("Cyan");
-        colorChoice.add("Magenta");
-        colorChoice.add("White");
-        colorChoice.add("Custom...");
+        String[] colors = {"Black", "Red", "Green", "Blue", "Yellow", "Orange", "Pink", "Cyan", "Magenta", "White", "Custom..."};
+        for (String color : colors) {
+            colorChoice.add(color);
+        }
         
         brushChoice = new Choice();
         for (int i = 1; i <= 10; i++) {
@@ -93,70 +93,57 @@ public class SimpleDrawingApp extends Frame implements ActionListener, MouseList
         toolChoice.add("Eraser");
         toolChoice.add("Color Picker");
         
-        // Create panels
-        toolPanel = new Panel(new GridLayout(2, 1));
-        canvasPanel = new Panel(new BorderLayout());
+        // Color preview box
+        colorPreviewBox = new Canvas() {
+            @Override
+            public void paint(Graphics g) {
+                g.setColor(currentColor);
+                g.fillRect(0, 0, getWidth(), getHeight());
+                g.setColor(Color.GRAY);
+                g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+            }
+        };
+        colorPreviewBox.setPreferredSize(new Dimension(60, 25));
+        colorPreviewBox.setMinimumSize(new Dimension(60, 25));
+        colorPreviewBox.setMaximumSize(new Dimension(60, 25));
         
-        // Status label
         statusLabel = new Label("Tool: " + currentTool + " | Color: Black | Brush Size: " + brushSize);
     }
     
+    /**
+     * Setup the layout using ToolbarFactory
+     */
     private void setupLayout() {
         setLayout(new BorderLayout());
         
-        // Create sub-panels for better organization
-        Panel propertiesPanel = new Panel(new FlowLayout(FlowLayout.LEFT));
-        Panel shapesPanel = new Panel(new FlowLayout(FlowLayout.LEFT));
-        Panel actionPanel = new Panel(new FlowLayout(FlowLayout.LEFT));
+        // Create panels using ToolbarFactory
+        JPanel propertiesPanel = ToolbarFactory.createPropertiesPanel(
+            colorChoice, colorPreviewBox, customColorBtn, colorPickerBtn,
+            brushChoice, toolChoice, currentColor
+        );
         
-        // Properties Panel
-        propertiesPanel.add(new Label("Color:"));
-        propertiesPanel.add(colorChoice);
-        propertiesPanel.add(customColorBtn);
-        propertiesPanel.add(colorPickerBtn);
-        propertiesPanel.add(new Label("Brush Size:"));
-        propertiesPanel.add(brushChoice);
-        propertiesPanel.add(new Label("Tool:"));
-        propertiesPanel.add(toolChoice);
+        JPanel shapesPanel = ToolbarFactory.createShapesPanel(
+            lineBtn, rectBtn, ovalBtn, triangleBtn, diamondBtn
+        );
         
-        // Shapes Panel
-        shapesPanel.add(new Label("Shapes:"));
-        shapesPanel.add(lineBtn);
-        shapesPanel.add(rectBtn);
-        shapesPanel.add(ovalBtn);
-        shapesPanel.add(triangleBtn);
-        shapesPanel.add(diamondBtn);
+        JPanel actionsPanel = ToolbarFactory.createActionsPanel(
+            clearBtn, undoBtn, redoBtn, saveBtn, loadBtn
+        );
         
-        // Action Panel
-        actionPanel.add(new Label("Actions:"));
-        actionPanel.add(clearBtn);
-        actionPanel.add(undoBtn);
-        actionPanel.add(redoBtn);
-        actionPanel.add(saveBtn);
-        actionPanel.add(loadBtn);
+        JPanel toolPanel = ToolbarFactory.createMainToolbar(
+            propertiesPanel, shapesPanel, actionsPanel
+        );
         
-        // Combine panels
-        Panel topRow = new Panel(new FlowLayout(FlowLayout.LEFT));
-        topRow.add(propertiesPanel);
-        
-        Panel bottomRow = new Panel(new FlowLayout(FlowLayout.LEFT));
-        bottomRow.add(shapesPanel);
-        bottomRow.add(actionPanel);
-        
-        toolPanel.add(topRow);
-        toolPanel.add(bottomRow);
-        
-        // Add canvas to canvas panel
-        canvasPanel.add(canvas, BorderLayout.CENTER);
-        
-        // Add panels to frame
         add(toolPanel, BorderLayout.NORTH);
-        add(canvasPanel, BorderLayout.CENTER);
+        add(canvas, BorderLayout.CENTER);
         add(statusLabel, BorderLayout.SOUTH);
     }
     
+    /**
+     * Setup event handlers
+     */
     private void setupEventHandlers() {
-        // Add action listeners
+        // Add action listeners to buttons
         lineBtn.addActionListener(this);
         rectBtn.addActionListener(this);
         ovalBtn.addActionListener(this);
@@ -170,46 +157,14 @@ public class SimpleDrawingApp extends Frame implements ActionListener, MouseList
         colorPickerBtn.addActionListener(this);
         customColorBtn.addActionListener(this);
         
-        // Add item listeners for choices - demonstrates event handling
-        colorChoice.addItemListener(new ItemListener() {
-            public void itemStateChanged(ItemEvent e) {
-                String colorName = colorChoice.getSelectedItem();
-                if (colorName.equals("Custom...")) {
-                    openCustomColorDialog();
-                } else {
-                    currentColor = ColorUtils.getColorFromName(colorName);
-                    canvas.setCurrentColor(currentColor);
-                    updateStatusLabel();
-                }
-            }
-        });
+        // Add item listeners for choices
+        colorChoice.addItemListener(e -> handleColorChange());
+        brushChoice.addItemListener(e -> handleBrushSizeChange());
+        toolChoice.addItemListener(e -> handleToolChange());
         
-        brushChoice.addItemListener(new ItemListener() {
-            public void itemStateChanged(ItemEvent e) {
-                brushSize = Integer.parseInt(brushChoice.getSelectedItem());
-                canvas.setBrushSize(brushSize);
-                updateStatusLabel();
-            }
-        });
-        
-        toolChoice.addItemListener(new ItemListener() {
-            public void itemStateChanged(ItemEvent e) {
-                String selectedTool = toolChoice.getSelectedItem();
-                if (selectedTool.equals("Brush")) {
-                    currentTool = "BRUSH";
-                } else if (selectedTool.equals("Eraser")) {
-                    currentTool = "ERASER";
-                } else if (selectedTool.equals("Color Picker")) {
-                    currentTool = "COLOR_PICKER";
-                }
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
-            }
-        });
-        
-        // Add mouse listeners to canvas
-        canvas.addMouseListener(this);
-        canvas.addMouseMotionListener(this);
+        // Add mouse event handlers to canvas
+        canvas.addMouseListener(new CanvasMouseHandler(canvas));
+        canvas.addMouseMotionListener(new CanvasMotionHandler(canvas));
     }
     
     @Override
@@ -218,44 +173,26 @@ public class SimpleDrawingApp extends Frame implements ActionListener, MouseList
         
         switch (command) {
             case "Line":
-                currentTool = "LINE";
-                toolChoice.select(0);
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
+                setTool("LINE");
                 break;
             case "Rectangle":
-                currentTool = "RECTANGLE";
-                toolChoice.select(0);
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
+                setTool("RECTANGLE");
                 break;
             case "Oval":
-                currentTool = "OVAL";
-                toolChoice.select(0);
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
+                setTool("OVAL");
                 break;
             case "Triangle":
-                currentTool = "TRIANGLE";
-                toolChoice.select(0);
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
+                setTool("TRIANGLE");
                 break;
             case "Diamond":
-                currentTool = "DIAMOND";
-                toolChoice.select(0);
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
+                setTool("DIAMOND");
                 break;
             case "Color Picker":
-                currentTool = "COLOR_PICKER";
-                toolChoice.select("Color Picker");
-                canvas.setCurrentTool(currentTool);
-                updateStatusLabel();
+                setTool("COLOR_PICKER");
                 statusLabel.setText("Color Picker: Click on canvas to pick a color | Tool: " + currentTool);
                 break;
             case "Custom Color...":
-                openCustomColorDialog();
+                handleCustomColor();
                 break;
             case "Clear":
                 canvas.clearCanvas();
@@ -267,236 +204,132 @@ public class SimpleDrawingApp extends Frame implements ActionListener, MouseList
                 canvas.redo();
                 break;
             case "Save":
-                saveDrawing();
+                handleSave();
                 break;
             case "Load":
-                loadDrawing();
+                handleLoad();
                 break;
         }
-    }
-    
-    // Mouse event implementations - delegates to canvas
-    @Override
-    public void mousePressed(MouseEvent e) {
-        isDrawing = true;
-        startPoint = e.getPoint();
-        lastPoint = e.getPoint();
-        canvas.handleMousePressed(e);
-    }
-    
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        if (isDrawing) {
-            lastPoint = e.getPoint();
-            canvas.handleMouseDragged(e);
-        }
-    }
-    
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        isDrawing = false;
-        canvas.handleMouseReleased(e);
-    }
-    
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        canvas.handleMouseClicked(e);
-    }
-    
-    @Override
-    public void mouseEntered(MouseEvent e) {}
-    
-    @Override
-    public void mouseExited(MouseEvent e) {}
-    
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        canvas.handleMouseMoved(e);
-    }
-    
-    private void updateStatusLabel() {
-        statusLabel.setText("Tool: " + currentTool + " | Color: " + ColorUtils.getColorName(currentColor) + " | Brush Size: " + brushSize);
     }
     
     /**
-     * Public method called by canvas when color is picked
-     * Demonstrates inter-component communication
+     * Set current drawing tool
      */
-    public void setPickedColor(Color color) {
-        this.currentColor = color;
-        canvas.setCurrentColor(color);
-        
-        // Update status to show picked color
-        String colorInfo = ColorUtils.formatRGB(color);
-        statusLabel.setText(colorInfo + " | Tool: " + currentTool + " | Brush Size: " + brushSize);
-        
-        // Try to find matching color in dropdown
-        String colorName = ColorUtils.getColorName(color);
-        for (int i = 0; i < colorChoice.getItemCount(); i++) {
-            String item = colorChoice.getItem(i);
-            if (item.contains(colorName)) {
-                colorChoice.select(i);
-                return;
-            }
+    private void setTool(String tool) {
+        currentTool = tool;
+        canvas.setCurrentTool(currentTool);
+        toolChoice.select(0); // Reset to Brush in dropdown
+        updateStatusLabel();
+    }
+    
+    /**
+     * Handle color change from dropdown
+     */
+    private void handleColorChange() {
+        String colorName = colorChoice.getSelectedItem();
+        if (colorName.equals("Custom...")) {
+            handleCustomColor();
+        } else {
+            currentColor = ColorUtils.getColorFromName(colorName);
+            canvas.setCurrentColor(currentColor);
+            colorPreviewBox.repaint();
+            updateStatusLabel();
         }
-        // If no match found, select Custom
-        colorChoice.select(colorChoice.getItemCount() - 1);
     }
     
-    private void openCustomColorDialog() {
-        Dialog colorDialog = new Dialog(this, "Choose Custom Color", true);
-        colorDialog.setLayout(new BorderLayout());
-        colorDialog.setSize(450, 400);
-        colorDialog.setLocationRelativeTo(this);
-        
-        // Create color palette panel - demonstrates composition
-        ColorPalettePanel palettePanel = new ColorPalettePanel();
-        colorDialog.add(palettePanel, BorderLayout.CENTER);
-        
-        // Create button panel
-        Panel buttonPanel = new Panel(new FlowLayout());
-        Button okBtn = new Button("OK");
-        Button cancelBtn = new Button("Cancel");
-        
-        okBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                currentColor = palettePanel.getSelectedColor();
-                canvas.setCurrentColor(currentColor);
-                updateStatusLabel();
-                colorDialog.dispose();
-            }
-        });
-        
-        cancelBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                colorDialog.dispose();
-            }
-        });
-        
-        buttonPanel.add(okBtn);
-        buttonPanel.add(cancelBtn);
-        colorDialog.add(buttonPanel, BorderLayout.SOUTH);
-        
-        colorDialog.setVisible(true);
+    /**
+     * Handle brush size change
+     */
+    private void handleBrushSizeChange() {
+        brushSize = Integer.parseInt(brushChoice.getSelectedItem());
+        canvas.setBrushSize(brushSize);
+        updateStatusLabel();
     }
     
-    private void saveDrawing() {
-        FileDialog fileDialog = new FileDialog(this, "Save Drawing", FileDialog.SAVE);
-        fileDialog.setFile("*.png");
-        fileDialog.setVisible(true);
-        
-        String filename = fileDialog.getFile();
-        if (filename != null) {
-            String directory = fileDialog.getDirectory();
-            File file = new File(directory, filename);
+    /**
+     * Handle tool change from dropdown
+     */
+    private void handleToolChange() {
+        String selectedTool = toolChoice.getSelectedItem();
+        switch (selectedTool) {
+            case "Brush":
+                currentTool = "BRUSH";
+                break;
+            case "Eraser":
+                currentTool = "ERASER";
+                break;
+            case "Color Picker":
+                currentTool = "COLOR_PICKER";
+                break;
+        }
+        canvas.setCurrentTool(currentTool);
+        updateStatusLabel();
+    }
+    
+    /**
+     * Handle custom color selection using DialogManager
+     */
+    private void handleCustomColor() {
+        Color newColor = DialogManager.showColorPickerDialog(this, currentColor);
+        if (newColor != null) {
+            currentColor = newColor;
+            canvas.setCurrentColor(currentColor);
+            colorPreviewBox.repaint();
+            updateStatusLabel();
+        }
+    }
+    
+    /**
+     * Handle save operation using FileDialogManager
+     */
+    private void handleSave() {
+        File file = FileDialogManager.showSaveDialog(this);
+        if (file != null) {
             canvas.saveToFile(file);
         }
     }
     
-    private void loadDrawing() {
-        FileDialog fileDialog = new FileDialog(this, "Load Drawing", FileDialog.LOAD);
-        fileDialog.setFile("*.png");
-        fileDialog.setVisible(true);
-        
-        String filename = fileDialog.getFile();
-        if (filename != null) {
-            String directory = fileDialog.getDirectory();
-            File file = new File(directory, filename);
+    /**
+     * Handle load operation using FileDialogManager
+     */
+    private void handleLoad() {
+        File file = FileDialogManager.showLoadDialog(this);
+        if (file != null) {
             canvas.loadFromFile(file);
         }
     }
     
-    public static void main(String[] args) {
-        new SimpleDrawingApp();
+    /**
+     * Update status label with current tool, color, and brush size
+     */
+    private void updateStatusLabel() {
+        statusLabel.setText("Tool: " + currentTool + " | Color: " + 
+            ColorUtils.getColorName(currentColor) + " | Brush Size: " + brushSize);
     }
     
     /**
-     * Inner class for custom color palette
-     * Demonstrates nested classes and encapsulation
+     * Called by canvas when color is picked
      */
-    class ColorPalettePanel extends Panel {
-        private Color selectedColor = Color.BLACK;
-        private Canvas paletteCanvas;
-        private Canvas previewCanvas;
-        private Label rgbLabel;
+    public void setPickedColor(Color color) {
+        this.currentColor = color;
+        canvas.setCurrentColor(color);
+        colorPreviewBox.repaint();
         
-        public ColorPalettePanel() {
-            setLayout(new BorderLayout());
-            
-            // Create gradient palette canvas
-            paletteCanvas = new Canvas() {
-                @Override
-                public void paint(Graphics g) {
-                    int width = getWidth();
-                    int height = getHeight();
-                    
-                    // Draw HSB gradient
-                    for (int y = 0; y < height; y++) {
-                        for (int x = 0; x < width; x++) {
-                            float hue = (float) x / width;
-                            float saturation = 1.0f;
-                            float brightness = 1.0f - (float) y / height;
-                            Color c = Color.getHSBColor(hue, saturation, brightness);
-                            g.setColor(c);
-                            g.fillRect(x, y, 1, 1);
-                        }
-                    }
-                }
-            };
-            paletteCanvas.setSize(350, 250);
-            
-            // Add mouse listener to palette
-            paletteCanvas.addMouseListener(new MouseAdapter() {
-                public void mouseClicked(MouseEvent e) {
-                    selectColorAt(e.getX(), e.getY());
-                }
-            });
-            
-            paletteCanvas.addMouseMotionListener(new MouseMotionAdapter() {
-                public void mouseDragged(MouseEvent e) {
-                    selectColorAt(e.getX(), e.getY());
-                }
-            });
-            
-            // Create preview panel
-            Panel previewPanel = new Panel(new BorderLayout());
-            previewCanvas = new Canvas() {
-                @Override
-                public void paint(Graphics g) {
-                    g.setColor(selectedColor);
-                    g.fillRect(0, 0, getWidth(), getHeight());
-                }
-            };
-            previewCanvas.setSize(80, 80);
-            
-            rgbLabel = new Label("RGB: 0, 0, 0");
-            
-            previewPanel.add(new Label("Selected Color:"), BorderLayout.NORTH);
-            previewPanel.add(previewCanvas, BorderLayout.CENTER);
-            previewPanel.add(rgbLabel, BorderLayout.SOUTH);
-            
-            add(paletteCanvas, BorderLayout.CENTER);
-            add(previewPanel, BorderLayout.EAST);
-        }
+        String colorInfo = ColorUtils.formatRGB(color);
+        statusLabel.setText(colorInfo + " | Tool: " + currentTool + " | Brush Size: " + brushSize);
         
-        private void selectColorAt(int x, int y) {
-            int width = paletteCanvas.getWidth();
-            int height = paletteCanvas.getHeight();
-            
-            if (x >= 0 && x < width && y >= 0 && y < height) {
-                float hue = (float) x / width;
-                float saturation = 1.0f;
-                float brightness = 1.0f - (float) y / height;
-                selectedColor = Color.getHSBColor(hue, saturation, brightness);
-                
-                previewCanvas.repaint();
-                rgbLabel.setText("RGB: " + selectedColor.getRed() + ", " + 
-                               selectedColor.getGreen() + ", " + selectedColor.getBlue());
+        // Update color choice dropdown
+        String colorName = ColorUtils.getColorName(color);
+        for (int i = 0; i < colorChoice.getItemCount(); i++) {
+            if (colorChoice.getItem(i).contains(colorName)) {
+                colorChoice.select(i);
+                return;
             }
         }
-        
-        public Color getSelectedColor() {
-            return selectedColor;
-        }
+        colorChoice.select(colorChoice.getItemCount() - 1);
+    }
+    
+    public static void main(String[] args) {
+        new SimpleDrawingApp();
     }
 }

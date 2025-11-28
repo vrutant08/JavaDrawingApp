@@ -2,22 +2,50 @@ package com.drawingstudio.manager;
 
 import com.drawingstudio.shapes.ShapeBase;
 import java.awt.image.BufferedImage;
-import java.awt.*;
-import java.util.*;
+import java.awt.Graphics2D;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages the history of canvas states for undo/redo functionality
- * Demonstrates encapsulation and state management
+ * Manages undo/redo history for the canvas
+ * Stores both the drawing image and shapes list
  */
 public class HistoryManager {
+    
+    /**
+     * Represents a saved state of the canvas
+     */
+    public static class CanvasState {
+        private BufferedImage image;
+        private List<ShapeBase> shapes;
+        
+        public CanvasState(BufferedImage img, List<ShapeBase> shapeList) {
+            // Deep copy the image
+            this.image = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
+            Graphics2D g = this.image.createGraphics();
+            g.drawImage(img, 0, 0, null);
+            g.dispose();
+            
+            // Deep copy the shapes list
+            this.shapes = new ArrayList<>(shapeList);
+        }
+        
+        public BufferedImage getImage() { 
+            return image; 
+        }
+        
+        public List<ShapeBase> getShapes() { 
+            return new ArrayList<>(shapes); 
+        }
+    }
+    
     private List<CanvasState> undoHistory;
     private List<CanvasState> redoHistory;
     private static final int MAX_UNDO_STEPS = 10;
     
     public HistoryManager() {
-        this.undoHistory = new ArrayList<>();
-        this.redoHistory = new ArrayList<>();
+        undoHistory = new ArrayList<>();
+        redoHistory = new ArrayList<>();
     }
     
     /**
@@ -36,72 +64,56 @@ public class HistoryManager {
     }
     
     /**
-     * Undo the last action
-     * @return The previous canvas state, or null if nothing to undo
+     * Undo last action
+     * @return Previous state, or null if no undo available
      */
     public CanvasState undo(BufferedImage currentImage, List<ShapeBase> currentShapes) {
-        if (undoHistory.isEmpty()) {
-            return null;
+        if (!undoHistory.isEmpty()) {
+            // Save current state to redo history
+            CanvasState currentState = new CanvasState(currentImage, currentShapes);
+            redoHistory.add(currentState);
+            
+            // Return previous state
+            return undoHistory.remove(undoHistory.size() - 1);
         }
-        
-        // Save current state to redo history
-        CanvasState currentState = new CanvasState(currentImage, currentShapes);
-        redoHistory.add(currentState);
-        
-        // Return previous state
-        return undoHistory.remove(undoHistory.size() - 1);
+        return null;
     }
     
     /**
-     * Redo the last undone action
-     * @return The next canvas state, or null if nothing to redo
+     * Redo previously undone action
+     * @return Next state, or null if no redo available
      */
     public CanvasState redo(BufferedImage currentImage, List<ShapeBase> currentShapes) {
-        if (redoHistory.isEmpty()) {
-            return null;
+        if (!redoHistory.isEmpty()) {
+            // Save current state to undo history
+            CanvasState currentState = new CanvasState(currentImage, currentShapes);
+            undoHistory.add(currentState);
+            
+            // Return next state
+            return redoHistory.remove(redoHistory.size() - 1);
         }
-        
-        // Save current state to undo history
-        CanvasState currentState = new CanvasState(currentImage, currentShapes);
-        undoHistory.add(currentState);
-        
-        // Return next state
-        return redoHistory.remove(redoHistory.size() - 1);
+        return null;
     }
     
+    /**
+     * Check if undo is available
+     */
     public boolean canUndo() {
         return !undoHistory.isEmpty();
     }
     
+    /**
+     * Check if redo is available
+     */
     public boolean canRedo() {
         return !redoHistory.isEmpty();
     }
     
     /**
-     * Inner class representing a canvas state snapshot
-     * Demonstrates composition and encapsulation
+     * Clear all history
      */
-    public static class CanvasState {
-        private BufferedImage image;
-        private List<ShapeBase> shapes;
-        
-        public CanvasState(BufferedImage img, List<ShapeBase> shapeList) {
-            // Deep copy the image
-            this.image = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
-            Graphics2D g = this.image.createGraphics();
-            g.drawImage(img, 0, 0, null);
-            g.dispose();
-            
-            // Deep copy the shapes list
-            this.shapes = new ArrayList<>(shapeList);
-        }
-        
-        public BufferedImage getImage() {
-            return image;
-        }
-        
-        public List<ShapeBase> getShapes() {
-            return new ArrayList<>(shapes);
-        }
+    public void clear() {
+        undoHistory.clear();
+        redoHistory.clear();
     }
 }

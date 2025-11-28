@@ -1,15 +1,14 @@
 package com.drawingstudio.utils;
 
-import java.awt.*;
+import java.awt.Color;
 
 /**
- * Utility class for color-related operations
- * Demonstrates utility class pattern and static methods
+ * Utility class for color operations
  */
 public class ColorUtils {
     
     /**
-     * Get Color object from color name string
+     * Get Color from color name string
      */
     public static Color getColorFromName(String name) {
         switch (name.toLowerCase()) {
@@ -31,16 +30,22 @@ public class ColorUtils {
      * Get color name from Color object
      */
     public static String getColorName(Color color) {
-        if (color.equals(Color.BLACK)) return "Black";
-        if (color.equals(Color.RED)) return "Red";
-        if (color.equals(Color.GREEN)) return "Green";
-        if (color.equals(Color.BLUE)) return "Blue";
-        if (color.equals(Color.YELLOW)) return "Yellow";
-        if (color.equals(Color.ORANGE)) return "Orange";
-        if (color.equals(Color.PINK)) return "Pink";
-        if (color.equals(Color.CYAN)) return "Cyan";
-        if (color.equals(Color.MAGENTA)) return "Magenta";
-        if (color.equals(Color.WHITE)) return "White";
+        Color[] colors = {
+            Color.BLACK, Color.RED, Color.GREEN, Color.BLUE, 
+            Color.YELLOW, Color.ORANGE, Color.PINK, Color.CYAN, 
+            Color.MAGENTA, Color.WHITE
+        };
+        String[] names = {
+            "Black", "Red", "Green", "Blue", 
+            "Yellow", "Orange", "Pink", "Cyan", 
+            "Magenta", "White"
+        };
+        
+        for (int i = 0; i < colors.length; i++) {
+            if (color.equals(colors[i])) {
+                return names[i];
+            }
+        }
         return "Black";
     }
     

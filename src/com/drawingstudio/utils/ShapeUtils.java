@@ -1,20 +1,19 @@
 package com.drawingstudio.utils;
 
 import com.drawingstudio.shapes.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Point;
 
 /**
- * Utility class for shape-related operations
- * Demonstrates factory pattern for creating shapes
+ * Factory class for creating shape objects
  */
 public class ShapeUtils {
     
     /**
-     * Create a shape based on tool type
-     * Demonstrates factory method pattern
+     * Create a shape based on type string
      */
-    public static ShapeBase createShape(String toolType, Point start, Point end, Color color, int strokeWidth) {
-        switch (toolType) {
+    public static ShapeBase createShape(String type, Point start, Point end, Color color, int strokeWidth) {
+        switch (type.toUpperCase()) {
             case "LINE":
                 return new LineShape(start, end, color, strokeWidth);
             case "RECTANGLE":
@@ -31,18 +30,14 @@ public class ShapeUtils {
     }
     
     /**
-     * Check if tool type is a shape tool
+     * Check if shape type is valid
      */
-    public static boolean isShapeTool(String toolType) {
-        return toolType.equals("LINE") || toolType.equals("RECTANGLE") || 
-               toolType.equals("OVAL") || toolType.equals("TRIANGLE") || 
-               toolType.equals("DIAMOND");
-    }
-    
-    /**
-     * Check if tool type is a brush tool
-     */
-    public static boolean isBrushTool(String toolType) {
-        return toolType.equals("BRUSH") || toolType.equals("ERASER");
+    public static boolean isValidShapeType(String type) {
+        String upperType = type.toUpperCase();
+        return upperType.equals("LINE") || 
+               upperType.equals("RECTANGLE") || 
+               upperType.equals("OVAL") || 
+               upperType.equals("TRIANGLE") || 
+               upperType.equals("DIAMOND");
     }
 }

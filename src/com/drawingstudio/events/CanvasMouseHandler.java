@@ -1,11 +1,11 @@
 package com.drawingstudio.events;
 
 import com.drawingstudio.canvas.DrawingCanvas;
-import java.awt.event.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 /**
- * Mouse event handler for the canvas
- * Demonstrates event handling and delegation pattern
+ * Handles mouse click and press/release events for the canvas
  */
 public class CanvasMouseHandler implements MouseListener {
     private DrawingCanvas canvas;

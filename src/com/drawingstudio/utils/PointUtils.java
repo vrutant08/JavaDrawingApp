@@ -1,9 +1,9 @@
 package com.drawingstudio.utils;
 
-import java.awt.*;
+import java.awt.Point;
 
 /**
- * Utility class for Point-related operations
+ * Utility class for point operations
  */
 public class PointUtils {
     
@@ -17,16 +17,16 @@ public class PointUtils {
     }
     
     /**
-     * Check if a point is within bounds
+     * Calculate midpoint between two points
      */
-    public static boolean isWithinBounds(Point p, int width, int height) {
-        return p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
+    public static Point midpoint(Point p1, Point p2) {
+        return new Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
     }
     
     /**
-     * Create a deep copy of a point
+     * Check if point is within bounds
      */
-    public static Point copyPoint(Point p) {
-        return new Point(p);
+    public static boolean isWithinBounds(Point p, int width, int height) {
+        return p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
     }
 }

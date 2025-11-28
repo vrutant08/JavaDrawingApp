@@ -1,61 +1,34 @@
 @echo off
-REM Drawing Studio Application - Package Structure Build Script
-REM This script compiles and runs the packaged Java application
-
-echo ========================================
-echo  Drawing Studio - Package Structure
-echo ========================================
+echo Compiling Drawing Studio...
 echo.
 
-REM Navigate to project directory
-cd /d "C:\Users\vruta\Desktop\VSCode\OtherProjects\JavaProjectSimple"
+REM Clean bin directory
+if exist bin\com rmdir /s /q bin\com
+if not exist bin mkdir bin
 
-echo Compiling Java packages...
-echo.
+REM Compile all Java files
+javac -d bin ^
+    src\com\drawingstudio\shapes\*.java ^
+    src\com\drawingstudio\manager\*.java ^
+    src\com\drawingstudio\utils\*.java ^
+    src\com\drawingstudio\ui\*.java ^
+    src\com\drawingstudio\events\*.java ^
+    src\com\drawingstudio\canvas\*.java ^
+    src\com\drawingstudio\app\*.java
 
-REM Clean previous compilation
-if exist "bin" (
-    echo Cleaning previous build...
-    rmdir /s /q bin
-)
-mkdir bin
-
-REM Compile all packages
-echo Compiling source files...
-javac -d bin -sourcepath src src\com\drawingstudio\app\SimpleDrawingApp.java
-
-if %ERRORLEVEL% NEQ 0 (
+if %errorlevel% neq 0 (
     echo.
-    echo ========================================
-    echo  ERROR: Compilation failed!
-    echo ========================================
-    echo Please check the error messages above.
+    echo Compilation failed!
     pause
-    exit /b 1
+    exit /b %errorlevel%
 )
 
 echo.
-echo ========================================
-echo  Compilation successful!
-echo ========================================
-echo.
-echo Running application...
+echo Compilation successful!
+echo Running Drawing Studio...
 echo.
 
 REM Run the application
 java -cp bin com.drawingstudio.app.SimpleDrawingApp
 
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo ========================================
-    echo  ERROR: Application failed to run!
-    echo ========================================
-    pause
-    exit /b 1
-)
-
-echo.
-echo ========================================
-echo  Application closed successfully
-echo ========================================
 pause
